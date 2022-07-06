@@ -42,7 +42,7 @@ library(rnaturalearth)
 
 
 
-e_county <- read.csv("U.S._Life_Expectancy_at_Birth_by_State_and_Census_Tract_-_2010-2015.csv")
+e_county <- read.csv("./Data/U.S._Life_Expectancy_at_Birth_by_State_and_Census_Tract_-_2010-2015.csv")
 
 pop_county <- read.csv("")
 
@@ -54,15 +54,23 @@ pop_county <- read.csv("")
 m <- c(-125.064, 23.0486, -63.2310, 49.7254)
 
 
-mc_locations <- m %>% 
-  opq (timeout = 25*100) %>%
-  add_osm_feature("name", "McDonald's")%>%
-  add_osm_feature("amenity", "fast_food")
+mc_locations_true <- m %>% 
+  opq (timeout = 100*30) %>%
+  add_osm_feature("amenity", "fast_food") %>%
+  add_osm_feature(
+    key = "name",
+    value = "McDonald's",
+    value_exact = FALSE, match_case = F
+  )
 
 #query
-mc_locations <- osmdata_sf(mc_locations)
+mc_locations <- osmdata_sf(mc_locations_true)
 
-mc_locations$osm_points
+mc_locations_df<-as.data.frame(mc_locations[["osm_points"]])
+
+x<-mc_locations_df %>% filter(name == "McDonald's" | brand.wikipedia == "en:McDonald's" | brand.wikipedia == "es:McDonald's")
+
+mc_locations_df %>% pull(brand.wikipedia) %>% unique()
 
 
 # McDonald's per county
@@ -101,53 +109,7 @@ plot(points, pch = 19, col = "black", add = TRUE)
 
 
 
-
-# Keep only last column
-
-#RegionID
-typical_home_value <- read.csv("typical_home_value.csv")
-
-typical_home_value <- typical_home_value[,c(1:9,277)] %>% mutate(MunicipalCodeFIPS = as.character(MunicipalCodeFIPS),
-                                                                 StateCodeFIPS = as.character(StateCodeFIPS))
-
-typical_home_value <- typical_home_value %>% mutate(MunicipalCodeFIPS = case_when(nchar(MunicipalCodeFIPS)==1 ~ paste("00",MunicipalCodeFIPS,sep=""),
-                                                            nchar(MunicipalCodeFIPS)==2 ~ paste("0",MunicipalCodeFIPS,sep=""),
-                                                            nchar(MunicipalCodeFIPS)==3~MunicipalCodeFIPS),
-                              StateCodeFIPS = case_when(nchar(StateCodeFIPS)==1 ~ paste("0",StateCodeFIPS, sep = ""),
-                                                        nchar(StateCodeFIPS)==2 ~ StateCodeFIPS),
-                              county_fips = paste(StateCodeFIPS,MunicipalCodeFIPS, sep = ""))
-
-# Separate county name and state name
-
-county_household_income <- read.csv("county_household_income.csv")
-
-county_household_income <- county_household_income %>% 
-  separate(Geographic.Area.Name, c("RegionName", "State"), ", ") %>% 
-  mutate(State = state.abb[match(State,state.name)])
-
-#Produce county fips
-county_household_income <- county_household_income %>% mutate(county_fips = substr(id,10,14))
-
-# Left join
-
-df_joined <- left_join(county_household_income, typical_home_value, by = c("county_fips"))
-df_joined <- df_joined %>% 
-  select(Household.median.income, X2022.04.30,county_fips)
-
-df_joined <- df_joined %>% mutate(Household.median.income = as.double(Household.median.income),
-                     X2022.04.30 = as.double(X2022.04.30))
-
-# Calculate new measure
-df_joined <- df_joined %>% mutate(years_to_buy = X2022.04.30/Household.median.income)
-
-#binned
-#df_joined <- df_joined %>% mutate(binned_years_to_buy = case_when(years_to_buy < 2 ~ "Less than two years",
-#                                                                  years_to_buy >= 2 & years_to_buy))
-
-#quantile(df_joined$years_to_buy, na.rm = T)
-
-
-#'* Plot graph *
+#'* Join data and plot it *
 
 #urbnmapr::counties
 
@@ -196,12 +158,3 @@ pp <- ggplot(data = household_data,
 
 dev.off()
 
-
-library(rayshader)
-
-par(mfrow = c(1, 2))
-plot_gg(pp, width = 5, height = 4, scale = 300, raytrace = FALSE, preview = TRUE)
-plot_gg(pp, width = 5, height = 4, scale = 300, multicore = TRUE, windowsize = c(1000, 800))
-render_camera(fov = 70, zoom = 0.5, theta = 130, phi = 35)
-Sys.sleep(0.2)
-render_snapshot(clear = TRUE)
