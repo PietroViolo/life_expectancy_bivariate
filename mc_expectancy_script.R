@@ -16,103 +16,26 @@ rm(list=ls(all=TRUE))
 
 library(tidyverse)
 library(viridis)
-library(geojsonio)
 library(RColorBrewer)
-library(rgdal)
-library(rgeos)
-library(broom)
-library(mapproj)
 library(urbnmapr)
-library(osmdata)
-library(sf)
 library(ggmap)
 library(raster)
-library(terra)
-library(plotwidgets)
-library(ggshadow)
-library(ggspatial)
-library(ggnewscale)
-library(janitor)
-library(rnaturalearth)
+library(zipcodeR)
 
-
-
-
-#'* County life expectancy data and population *
-
-
+#'* County life expectancy data, population and McDonald's location*
 
 e_county <- read.csv("./Data/U.S._Life_Expectancy_at_Birth_by_State_and_Census_Tract_-_2010-2015.csv")
 
-pop_county <- read.csv("")
+mc_locations <- read.csv("./Data/McDonalds.csv")
+
+#'* Transform McDonald's zipcode to county name *
+
+mc_locations <- mc_locations %>% 
+  mutate(zipcode = substr(properties.postcode,1,5),
+         county = reve)
 
 
 
-#'* Using OSM, calculate number of Mc Donald's in a county *
-
-
-m <- c(-125.064, 23.0486, -63.2310, 49.7254)
-
-
-<<<<<<< HEAD
-mc_locations <- m %>% 
-  opq (timeout = 25*10) %>%
-  add_osm_feature("name", "McDonald's")%>%
-  add_osm_feature("amenity", "fast_food")
-=======
-mc_locations_true <- m %>% 
-  opq (timeout = 100*30) %>%
-  add_osm_feature("amenity", "fast_food") %>%
-  add_osm_feature(
-    key = "name",
-    value = "McDonald's",
-    value_exact = FALSE, match_case = F
-  )
->>>>>>> 033dd500541f80954c4b4a34d82ec57859453671
-
-#query
-mc_locations <- osmdata_sf(mc_locations_true)
-
-mc_locations_df<-as.data.frame(mc_locations[["osm_points"]])
-
-x<-mc_locations_df %>% filter(name == "McDonald's" | brand.wikipedia == "en:McDonald's" | brand.wikipedia == "es:McDonald's")
-
-mc_locations_df %>% pull(brand.wikipedia) %>% unique()
-
-
-# McDonald's per county
-
-polygon <- getData('GADM', country='USA', level = 2)[,1]
-polygon <- st_as_sf(polygon)
-colnames(polygon) <- c("id_polygons", "geometry")
-
-intersection <- st_intersection(x = polygon, y = points)
-
-# View result
-table(intersection$id_polygons) # using table
-
-# using dplyr
-int_result <- intersection %>% 
-  group_by(id_polygons) %>% 
-  count()
-
-as.data.frame(int_result)[,-3]
-
-
-
-
-
-
-
-bbox <- st_as_sfc(st_bbox(polygon))
-points <- st_sample(x = bbox, size = 100, type = "random")
-points <- st_as_sf(data.frame(id_points = as.character(1:100)), points) # add points ID
-
-# Plot data ---------------------------------------------------------------
-
-# Plot polygon + points
-plot(polygon, graticule = st_crs(4326), key.pos = 1)
-plot(points, pch = 19, col = "black", add = TRUE)
 
 
 
