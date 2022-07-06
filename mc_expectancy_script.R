@@ -42,7 +42,7 @@ library(rnaturalearth)
 
 
 
-e_county <- read.csv("U.S._Life_Expectancy_at_Birth_by_State_and_Census_Tract_-_2010-2015.csv")
+e_county <- read.csv("./Data/U.S._Life_Expectancy_at_Birth_by_State_and_Census_Tract_-_2010-2015.csv")
 
 pop_county <- read.csv("")
 
@@ -55,7 +55,7 @@ m <- c(-125.064, 23.0486, -63.2310, 49.7254)
 
 
 mc_locations <- m %>% 
-  opq (timeout = 25*100) %>%
+  opq (timeout = 25*10) %>%
   add_osm_feature("name", "McDonald's")%>%
   add_osm_feature("amenity", "fast_food")
 
